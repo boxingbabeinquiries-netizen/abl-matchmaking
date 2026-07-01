@@ -40,14 +40,15 @@ class QueueManager {
         );
     }
 
-    join(queueName, user) {
+    join(queueName, member) {
+
         const queue = this.getQueue(queueName);
 
         if (!queue) {
             throw new Error(`Queue "${queueName}" does not exist.`);
         }
 
-        if (this.isPlayerQueued(user.id)) {
+        if (this.isPlayerQueued(member.id)) {
             return {
                 success: false,
                 reason: "ALREADY_IN_QUEUE"
@@ -64,8 +65,8 @@ class QueueManager {
         }
 
         queue.players.push({
-            id: user.id,
-            username: user.username
+            id: member.id,
+            displayName: member.displayName
         });
 
         return {
@@ -74,6 +75,7 @@ class QueueManager {
     }
 
     leave(queueName, userId) {
+
         const queue = this.getQueue(queueName);
 
         const index = queue.players.findIndex(
@@ -90,6 +92,7 @@ class QueueManager {
     }
 
     clear(queueName) {
+
         const queue = this.getQueue(queueName);
 
         queue.players = [];

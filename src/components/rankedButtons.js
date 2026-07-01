@@ -1,6 +1,6 @@
 const queueManager = require("../queue/queueManager");
 const config = require("../config/config");
-const { refreshRankedPanel } = require("../utils/refreshRankedPanel");
+const matchmakingService = require("../services/matchmakingService");
 const { BUTTONS, QUEUES } = require("../utils/constants");
 
 module.exports = async (interaction) => {
@@ -13,7 +13,7 @@ module.exports = async (interaction) => {
 
             const result = queueManager.join(
                 QUEUES.RANKED,
-                interaction.user
+                interaction.member
             );
 
             if (!result.success) {
@@ -28,7 +28,7 @@ module.exports = async (interaction) => {
 
                     case "QUEUE_FULL":
                         return interaction.reply({
-                            content: `❌ The Ranked Queue is currently full (${maxPlayers}/${maxPlayers}).`,
+                            content: `❌ The Ranked Queue is full (${maxPlayers}/${maxPlayers}).`,
                             ephemeral: true
                         });
 
@@ -37,26 +37,32 @@ module.exports = async (interaction) => {
                             content: "❌ Unable to join the Ranked Queue.",
                             ephemeral: true
                         });
+
                 }
+
             }
 
-            await refreshRankedPanel();
+            await matchmakingService.playerJoined(
+                QUEUES.RANKED,
+                interaction.channel
+            );
 
             const players = queueManager.getPlayers(QUEUES.RANKED);
 
             return interaction.reply({
                 content:
-                    `🥊 You joined the Ranked Queue!\n\n` +
+                    `🥊 The Commissioner has accepted you into the Ranked Queue!\n\n` +
                     `👥 Fighters waiting: **${players.length}/${maxPlayers}**`,
                 ephemeral: true
             });
+
         }
 
         case BUTTONS.LEAVE_QUEUE: {
 
             const left = queueManager.leave(
                 QUEUES.RANKED,
-                interaction.user.id
+                interaction.member.id
             );
 
             if (!left) {
@@ -66,16 +72,17 @@ module.exports = async (interaction) => {
                 });
             }
 
-            await refreshRankedPanel();
+            await matchmakingService.playerLeft(QUEUES.RANKED);
 
             const players = queueManager.getPlayers(QUEUES.RANKED);
 
             return interaction.reply({
                 content:
-                    `🚪 You left the Ranked Queue.\n\n` +
+                    `🚪 The Commissioner has removed you from the Ranked Queue.\n\n` +
                     `👥 Fighters waiting: **${players.length}/${maxPlayers}**`,
                 ephemeral: true
             });
+
         }
 
     }

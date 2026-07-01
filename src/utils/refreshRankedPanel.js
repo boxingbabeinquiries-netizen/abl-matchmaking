@@ -9,9 +9,19 @@ async function refreshRankedPanel() {
         return;
     }
 
-    await queue.panelMessage.edit(
-        updateRankedPanel(queue)
-    );
+    try {
+
+        const updatedPanel = updateRankedPanel(queue);
+
+        await queue.panelMessage.edit(updatedPanel);
+
+    } catch (error) {
+
+        console.error("Failed to refresh Ranked Queue panel:");
+        console.error(error);
+
+    }
+
 }
 
 module.exports = {

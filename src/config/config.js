@@ -1,6 +1,6 @@
 module.exports = {
     bot: {
-        name: "ABL Matchmaking",
+        name: "The Commissioner",
         version: "0.2.0"
     },
 
