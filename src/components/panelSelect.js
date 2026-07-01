@@ -1,4 +1,5 @@
 const { createRankedPanel } = require("../ui/rankedPanel");
+const queueManager = require("../queue/queueManager");
 
 module.exports = async (interaction) => {
 
@@ -6,28 +7,32 @@ module.exports = async (interaction) => {
 
     switch (selection) {
 
-        case "ranked":
+        case "ranked": {
 
-            await interaction.channel.send(
+            const message = await interaction.channel.send(
                 createRankedPanel()
             );
 
+            const queue = queueManager.getQueue("ranked");
+
+            queue.panelMessageId = message.id;
+
             await interaction.update({
-                content: "✅ Ranked queue panel created successfully!",
+                content: "✅ Ranked Queue panel created successfully!",
                 components: []
             });
 
             break;
+        }
 
         case "rp":
 
             await interaction.update({
-                content: "🎭 RP Queue is coming in the next sprint!",
+                content: "🎭 RP Queue coming soon!",
                 components: []
             });
 
             break;
-
     }
 
 };
