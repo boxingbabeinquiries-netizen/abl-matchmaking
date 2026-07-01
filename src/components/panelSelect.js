@@ -13,9 +13,7 @@ module.exports = async (interaction) => {
                 createRankedPanel()
             );
 
-            const queue = queueManager.getQueue("ranked");
-
-            queue.panelMessageId = message.id;
+            queueManager.setPanelMessage("ranked", message);
 
             await interaction.update({
                 content: "✅ Ranked Queue panel created successfully!",
@@ -25,7 +23,7 @@ module.exports = async (interaction) => {
             break;
         }
 
-        case "rp":
+        case "rp": {
 
             await interaction.update({
                 content: "🎭 RP Queue coming soon!",
@@ -33,6 +31,8 @@ module.exports = async (interaction) => {
             });
 
             break;
+        }
+
     }
 
 };

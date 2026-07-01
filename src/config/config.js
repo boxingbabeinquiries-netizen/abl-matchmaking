@@ -1,15 +1,18 @@
 module.exports = {
     bot: {
-        version: "0.1.0",
-        name: "ABL Matchmaking"
+        name: "ABL Matchmaking",
+        version: "0.2.0"
     },
 
     queue: {
-        size: 2,
-        countdown: 120
-    },
+        ranked: {
+            maxPlayers: 50,
+            countdownSeconds: 120
+        },
 
-    embed: {
-        color: 0xE53935
+        rp: {
+            maxPlayers: 50,
+            countdownSeconds: 120
+        }
     }
 };
