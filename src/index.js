@@ -1,8 +1,9 @@
 require("dotenv").config();
 
 const { Client, GatewayIntentBits } = require("discord.js");
-const config = require("./config/config");
+
 const loadCommands = require("./handlers/commandHandler");
+const loadEvents = require("./handlers/eventHandler");
 
 const client = new Client({
     intents: [
@@ -10,16 +11,7 @@ const client = new Client({
     ]
 });
 
-client.once("ready", () => {
-    console.clear();
-
-    console.log("========================================");
-    console.log(`🥊 ${config.bot.name}`);
-    console.log(`Version: ${config.bot.version}`);
-    console.log("----------------------------------------");
-    console.log(`Logged in as: ${client.user.tag}`);
-    console.log("Bot is ready for fighters!");
-    console.log("========================================");
-});
+loadCommands(client);
+loadEvents(client);
 
 client.login(process.env.DISCORD_TOKEN);

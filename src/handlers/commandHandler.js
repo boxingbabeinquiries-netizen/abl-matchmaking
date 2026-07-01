@@ -13,8 +13,16 @@ module.exports = (client) => {
     for (const file of commandFiles) {
         const command = require(path.join(commandsPath, file));
 
-        client.commands.set(command.data.name, command);
+        // Make sure the command has the expected structure
+        if (!command.data || !command.execute) {
+            console.warn(`⚠️ Skipping invalid command file: ${file}`);
+            continue;
+        }
 
-        console.log(`✅ Loaded command: ${command.data.name}`);
+        const data = command.data.toJSON();
+
+        client.commands.set(data.name, command);
+
+        console.log(`✅ Loaded command: ${data.name}`);
     }
 };
