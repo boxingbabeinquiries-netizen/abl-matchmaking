@@ -71,6 +71,66 @@ class PlayerRepository {
 
     }
 
+    async getMany(ids) {
+
+        if (!ids.length) {
+            return [];
+        }
+
+        return new Promise((resolve, reject) => {
+
+            const placeholders = ids.map(() => "?").join(",");
+
+            database.all(
+                `
+                SELECT *
+                FROM players
+                WHERE id IN (${placeholders})
+                `,
+                ids,
+                (error, rows) => {
+
+                    if (error) {
+                        reject(error);
+                        return;
+                    }
+
+                    resolve(rows);
+
+                }
+            );
+
+        });
+
+    }
+
+    async getAll() {
+
+        return new Promise((resolve, reject) => {
+
+            database.all(
+                `
+                SELECT *
+                FROM players
+                ORDER BY username ASC
+                `,
+                [],
+                (error, rows) => {
+
+                    if (error) {
+                        reject(error);
+                        return;
+                    }
+
+                    resolve(rows);
+
+                }
+            );
+
+        });
+
+    }
+
     async update(player) {
 
         return new Promise((resolve, reject) => {

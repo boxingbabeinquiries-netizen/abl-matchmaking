@@ -124,6 +124,47 @@ class QueueRepository {
 
     }
 
+    /**
+     * Returns every persisted queue entry.
+     */
+    async getAllQueues() {
+
+        return new Promise((resolve, reject) => {
+
+            database.all(
+                `
+                SELECT *
+                FROM queue_players
+                ORDER BY queueName ASC, joinedAt ASC
+                `,
+                [],
+                (error, rows) => {
+
+                    if (error) {
+                        reject(error);
+                        return;
+                    }
+
+                    resolve(rows);
+
+                }
+            );
+
+        });
+
+    }
+
+    /**
+     * Returns true if a queue contains persisted players.
+     */
+    async hasPlayers(queueName) {
+
+        const players = await this.getPlayers(queueName);
+
+        return players.length > 0;
+
+    }
+
 }
 
 module.exports = new QueueRepository();
