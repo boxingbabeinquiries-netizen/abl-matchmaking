@@ -9,50 +9,45 @@ class MatchCreationService {
 
     async create(channel, queueName) {
 
-        // Verify there are still enough players.
         if (!matchmakingEngine.canCreateMatch(queueName)) {
-            return false;
+            return null;
         }
-
-        const preview = matchmakingEngine.previewMatch(queueName);
-
-        if (!preview) {
-            return false;
-        }
-
-        console.log(
-            `🥊 Creating match: ${preview.blueCorner.displayName} vs ${preview.redCorner.displayName}`
-        );
 
         const match = matchmakingEngine.createMatch(queueName);
 
         if (!match) {
-            return false;
+            return null;
         }
 
         const queue = queueManager.getQueue(queueName);
 
-        // Fully reset queue state.
+        // Reset countdown state
         queue.countdown = null;
 
-        // If no fighters remain, reset to an idle state.
-        if (queue.players.length === 0) {
-            queue.countdown = null;
+        try {
+
+            await channel.send(
+                createMatchAnnouncement(match)
+            );
+
+            console.log(
+                `🥊 Match created: ${match.blueCorner.displayName} vs ${match.redCorner.displayName}`
+            );
+
+        } catch (error) {
+
+            console.error(
+                "Failed to announce match:",
+                error
+            );
+
         }
 
-        // Send announcement.
-        await channel.send(
-            createMatchAnnouncement(match)
-        );
-
-        // Refresh the queue panel.
+        // Always refresh the queue afterwards
         await refreshRankedPanel(queueName);
 
-        console.log(
-            `✅ Match ${match.id} completed successfully.`
-        );
-
         return match;
+
     }
 
 }

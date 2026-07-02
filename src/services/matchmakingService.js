@@ -15,12 +15,10 @@ class MatchmakingService {
 
         await refreshRankedPanel(queueName);
 
-        // Not enough players to begin matchmaking.
         if (!matchmakingEngine.canCreateMatch(queueName)) {
             return;
         }
 
-        // Prevent multiple countdowns.
         if (countdownManager.isRunning(queueName)) {
             return;
         }
@@ -29,35 +27,51 @@ class MatchmakingService {
 
         countdownManager.start(queueName, async (remaining) => {
 
-            // Countdown cancelled because someone left.
-            if (queue.players.length < 2) {
+            try {
+
+                // Someone left the queue
+                if (queue.players.length < 2) {
+
+                    countdownManager.stop(queueName);
+
+                    queue.countdown = null;
+
+                    await refreshRankedPanel(queueName);
+
+                    return;
+                }
+
+                queue.countdown = remaining;
+
+                await refreshRankedPanel(queueName);
+
+                if (remaining <= 0) {
+
+                    queue.countdown = null;
+
+                    const match = await matchCreationService.create(
+                        channel,
+                        queueName
+                    );
+
+                    if (match) {
+                        await refreshRankedPanel(queueName);
+                    }
+
+                }
+
+            } catch (error) {
+
+                console.error(
+                    `[${queueName}] Matchmaking error:`,
+                    error
+                );
 
                 countdownManager.stop(queueName);
 
                 queue.countdown = null;
 
                 await refreshRankedPanel(queueName);
-
-                return;
-            }
-
-            queue.countdown = remaining;
-
-            await refreshRankedPanel(queueName);
-
-            // Countdown finished.
-            if (remaining <= 0) {
-
-                queue.countdown = null;
-
-                const created = await matchCreationService.create(
-                    channel,
-                    queueName
-                );
-
-                if (created) {
-                    await refreshRankedPanel(queueName);
-                }
 
             }
 

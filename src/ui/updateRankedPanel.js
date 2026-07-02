@@ -3,6 +3,10 @@ const { createRankedPanel } = require("./rankedPanel");
 
 function formatCountdown(seconds) {
 
+    if (seconds === null || seconds === undefined) {
+        return "00:00";
+    }
+
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
 
@@ -26,22 +30,23 @@ function updateRankedPanel(queue) {
                 .map(player => `🥊 ${player.displayName}`)
                 .join("\n");
 
-    let status = "🟢 Open";
+    let status = "🟢 Waiting for Fighters";
     let matchmaking = "Waiting for another fighter...";
 
     if (queue.countdown !== null) {
 
-        status = "🟡 Matchmaking";
+        status = "🟡 Countdown Active";
 
         matchmaking =
             `🔔 Match begins in\n\n**${formatCountdown(queue.countdown)}**`;
 
-    } else if (queue.players.length >= 2) {
+    }
+    else if (queue.players.length >= 2) {
 
         status = "🟠 Ready";
 
         matchmaking =
-            "Two fighters are ready.\nWaiting for matchmaking to begin.";
+            "Two fighters are ready.\nCountdown will begin shortly.";
 
     }
 
@@ -49,7 +54,7 @@ function updateRankedPanel(queue) {
         0,
         3,
         {
-            name: "📊 Status",
+            name: "📊 Queue Status",
             value: status,
             inline: false
         },

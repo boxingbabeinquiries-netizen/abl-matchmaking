@@ -17,33 +17,49 @@ class CountdownManager {
         }
 
         const duration = config.queue[queueName].countdownSeconds;
+
         let remaining = duration;
+        let running = false;
 
         console.log(
-            `⏳ [${queueName}] Countdown started (${duration}s).`
+            `⏳ [${queueName}] Countdown started (${duration}s)`
         );
 
         const interval = setInterval(async () => {
 
-            remaining--;
+            if (running) {
+                return;
+            }
 
-            await callback(remaining);
+            running = true;
 
-            if (remaining <= 0) {
+            try {
 
-                console.log(
-                    `🥊 [${queueName}] Countdown finished.`
-                );
+                remaining--;
 
-                this.stop(queueName);
+                await callback(remaining);
+
+                if (remaining <= 0) {
+
+                    console.log(
+                        `🥊 [${queueName}] Countdown finished`
+                    );
+
+                    this.stop(queueName);
+                }
+
+            } finally {
+
+                running = false;
+
             }
 
         }, 1000);
 
         this.timers.set(queueName, {
             interval,
-            startedAt: Date.now(),
-            duration
+            duration,
+            startedAt: Date.now()
         });
 
         return true;
@@ -62,7 +78,7 @@ class CountdownManager {
         this.timers.delete(queueName);
 
         console.log(
-            `🛑 [${queueName}] Countdown stopped.`
+            `🛑 [${queueName}] Countdown stopped`
         );
 
         return true;
@@ -80,7 +96,11 @@ class CountdownManager {
             (Date.now() - timer.startedAt) / 1000
         );
 
-        return Math.max(timer.duration - elapsed, 0);
+        return Math.max(
+            timer.duration - elapsed,
+            0
+        );
+
     }
 
     reset(queueName) {

@@ -8,11 +8,11 @@ async function refreshRankedPanel(queueName = QUEUES.RANKED) {
 
     if (!queue) {
         console.error(`Queue "${queueName}" not found.`);
-        return;
+        return false;
     }
 
     if (!queue.panelMessage) {
-        return;
+        return false;
     }
 
     try {
@@ -21,6 +21,8 @@ async function refreshRankedPanel(queueName = QUEUES.RANKED) {
 
         await queue.panelMessage.edit(updatedPanel);
 
+        return true;
+
     } catch (error) {
 
         console.error(
@@ -28,6 +30,13 @@ async function refreshRankedPanel(queueName = QUEUES.RANKED) {
         );
 
         console.error(error);
+
+        // If the panel was deleted, clear the cached reference.
+        queue.panelMessage = null;
+        queue.panelMessageId = null;
+        queue.panelChannelId = null;
+
+        return false;
 
     }
 

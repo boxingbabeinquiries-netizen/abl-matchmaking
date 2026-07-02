@@ -11,75 +11,92 @@ const config = require("../config/config");
 
 module.exports = async (interaction) => {
 
-    switch (interaction.customId) {
+    try {
 
-        case BUTTONS.JOIN_RANKED: {
+        switch (interaction.customId) {
 
-            const result = queueManager.join(
-                QUEUES.RANKED,
-                interaction.member
-            );
+            case BUTTONS.JOIN_RANKED: {
 
-            if (!result.success) {
+                const result = queueManager.join(
+                    QUEUES.RANKED,
+                    interaction.member
+                );
 
-                switch (result.reason) {
+                if (!result.success) {
 
-                    case QUEUE_RESULTS.ALREADY_IN_QUEUE:
-                        return interaction.reply({
-                            content: "❌ You are already in a matchmaking queue.",
-                            ephemeral: true
-                        });
+                    switch (result.reason) {
 
-                    case QUEUE_RESULTS.QUEUE_FULL:
-                        return interaction.reply({
-                            content: `❌ The Ranked Queue is full (${config.queue.ranked.maxPlayers}/${config.queue.ranked.maxPlayers}).`,
-                            ephemeral: true
-                        });
+                        case QUEUE_RESULTS.ALREADY_IN_QUEUE:
+                            return interaction.reply({
+                                content: "❌ You are already in a matchmaking queue.",
+                                ephemeral: true
+                            });
 
-                    default:
-                        return interaction.reply({
-                            content: "❌ Unable to join the Ranked Queue.",
-                            ephemeral: true
-                        });
+                        case QUEUE_RESULTS.QUEUE_FULL:
+                            return interaction.reply({
+                                content: `❌ The Ranked Queue is full (${config.queue.ranked.maxPlayers}/${config.queue.ranked.maxPlayers}).`,
+                                ephemeral: true
+                            });
+
+                        default:
+                            return interaction.reply({
+                                content: "❌ Unable to join the Ranked Queue.",
+                                ephemeral: true
+                            });
+
+                    }
 
                 }
 
-            }
-
-            await matchmakingService.playerJoined(
-                QUEUES.RANKED,
-                interaction.channel
-            );
-
-            return interaction.reply({
-                content: "🥊 **The Commissioner** has accepted you into the Ranked Queue.",
-                ephemeral: true
-            });
-
-        }
-
-        case BUTTONS.LEAVE_QUEUE: {
-
-            const success = queueManager.leave(
-                QUEUES.RANKED,
-                interaction.member.id
-            );
-
-            if (!success) {
+                await matchmakingService.playerJoined(
+                    QUEUES.RANKED,
+                    interaction.channel
+                );
 
                 return interaction.reply({
-                    content: "❌ You are not currently in the Ranked Queue.",
+                    content: "🥊 **The Commissioner** has accepted you into the Ranked Queue.",
                     ephemeral: true
                 });
 
             }
 
-            await matchmakingService.playerLeft(
-                QUEUES.RANKED
-            );
+            case BUTTONS.LEAVE_QUEUE: {
 
-            return interaction.reply({
-                content: "🚪 **The Commissioner** has removed you from the Ranked Queue.",
+                const success = queueManager.leave(
+                    QUEUES.RANKED,
+                    interaction.member.id
+                );
+
+                if (!success) {
+
+                    return interaction.reply({
+                        content: "❌ You are not currently in the Ranked Queue.",
+                        ephemeral: true
+                    });
+
+                }
+
+                await matchmakingService.playerLeft(
+                    QUEUES.RANKED
+                );
+
+                return interaction.reply({
+                    content: "🚪 **The Commissioner** has removed you from the Ranked Queue.",
+                    ephemeral: true
+                });
+
+            }
+
+        }
+
+    } catch (error) {
+
+        console.error("Ranked button interaction failed:", error);
+
+        if (!interaction.replied && !interaction.deferred) {
+
+            await interaction.reply({
+                content: "❌ An unexpected error occurred while processing your request.",
                 ephemeral: true
             });
 
