@@ -29,15 +29,12 @@ class MatchmakingService {
 
             try {
 
-                // Someone left the queue
                 if (queue.players.length < 2) {
 
                     countdownManager.stop(queueName);
-
                     queue.countdown = null;
 
                     await refreshRankedPanel(queueName);
-
                     return;
                 }
 
@@ -45,18 +42,36 @@ class MatchmakingService {
 
                 await refreshRankedPanel(queueName);
 
-                if (remaining <= 0) {
+                if (remaining > 0) {
+                    return;
+                }
 
-                    queue.countdown = null;
+                queue.countdown = null;
 
-                    const match = await matchCreationService.create(
-                        channel,
-                        queueName
+                const match = await matchCreationService.create(
+                    channel,
+                    queueName
+                );
+
+                if (!match) {
+                    return;
+                }
+
+                // Refresh after removing the fighters.
+                await refreshRankedPanel(queueName);
+
+                // NEW: Continue matchmaking automatically.
+                if (matchmakingEngine.canCreateMatch(queueName)) {
+
+                    console.log(
+                        `🥊 More fighters remain in ${queueName}. Starting another countdown...`
                     );
 
-                    if (match) {
-                        await refreshRankedPanel(queueName);
-                    }
+                    // Start the next matchmaking cycle.
+                    await this.playerJoined(
+                        queueName,
+                        channel
+                    );
 
                 }
 
@@ -86,7 +101,6 @@ class MatchmakingService {
         if (queue.players.length < 2) {
 
             countdownManager.stop(queueName);
-
             queue.countdown = null;
 
         }

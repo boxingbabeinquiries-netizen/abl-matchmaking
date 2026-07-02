@@ -1,5 +1,6 @@
 const queueManager = require("../queue/queueManager");
 const MatchmakingEngine = require("../queue/matchmakingEngine");
+const matchmakingService = require("./matchmakingService");
 const { createMatchAnnouncement } = require("../ui/matchAnnouncement");
 const { refreshRankedPanel } = require("../utils/refreshRankedPanel");
 
@@ -21,7 +22,7 @@ class MatchCreationService {
 
         const queue = queueManager.getQueue(queueName);
 
-        // Reset countdown state
+        // Reset the countdown.
         queue.countdown = null;
 
         try {
@@ -43,8 +44,22 @@ class MatchCreationService {
 
         }
 
-        // Always refresh the queue afterwards
+        // Refresh the queue panel.
         await refreshRankedPanel(queueName);
+
+        // NEW: Automatically start the next countdown if enough fighters remain.
+        if (matchmakingEngine.canCreateMatch(queueName)) {
+
+            console.log(
+                `⏳ More fighters detected. Starting the next countdown...`
+            );
+
+            await matchmakingService.playerJoined(
+                queueName,
+                channel
+            );
+
+        }
 
         return match;
 

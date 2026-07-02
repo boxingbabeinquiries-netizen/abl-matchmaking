@@ -20,8 +20,13 @@ function createMatchAnnouncement(match) {
                         inline: true
                     },
                     {
-                        name: "📋 Division",
-                        value: "Ranked Queue",
+                        name: "📋 Queue",
+                        value: match.queue.charAt(0).toUpperCase() + match.queue.slice(1),
+                        inline: false
+                    },
+                    {
+                        name: "🕒 Sanctioned",
+                        value: `<t:${Math.floor(match.createdAt.getTime() / 1000)}:F>`,
                         inline: false
                     }
                 )
