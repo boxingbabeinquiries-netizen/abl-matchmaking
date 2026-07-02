@@ -1,121 +1,160 @@
+const config = require("../config/config");
+const Player = require("../models/Player");
+
 class QueueManager {
 
     constructor() {
 
         this.queues = {
-            boxing_beta: this.createGameQueues(),
-            ubg: this.createGameQueues()
+            ranked: this.createQueue(),
+            rp: this.createQueue()
         };
 
     }
 
-    //
-    // Creates the standard queue structure per game
-    //
-    createGameQueues() {
+    createQueue() {
 
         return {
-            ranked: {
-                players: [],
-                countdown: null,
-                panelMessage: null
-            },
-            rp: {
-                players: [],
-                countdown: null,
-                panelMessage: null
-            }
+            players: [],
+
+            // WAITING | COUNTDOWN | MATCH_FOUND
+            state: "WAITING",
+
+            countdown: null,
+
+            panelMessage: null,
+            panelMessageId: null,
+            panelChannelId: null
         };
 
     }
 
-    //
-    // Get a specific queue inside a game
-    //
-    getQueue(game, queueName) {
+    getQueue(queueName) {
+        return this.queues[queueName];
+    }
 
-        if (!this.queues[game]) {
+    getPlayers(queueName) {
+        return this.getQueue(queueName).players;
+    }
+
+    setState(queueName, state) {
+
+        const queue = this.getQueue(queueName);
+
+        if (!queue) {
+            return;
+        }
+
+        queue.state = state;
+
+    }
+
+    getState(queueName) {
+
+        const queue = this.getQueue(queueName);
+
+        if (!queue) {
             return null;
         }
 
-        return this.queues[game][queueName];
+        return queue.state;
+
     }
 
-    //
-    // Add player to a game + queue
-    //
-    addPlayer(game, queueName, player) {
+    setPanelMessage(queueName, message) {
 
-        const queue = this.getQueue(game, queueName);
-
-        if (!queue) return;
-
-        queue.players.push(player);
-    }
-
-    //
-    // Remove player from a game + queue
-    //
-    removePlayer(game, queueName, playerId) {
-
-        const queue = this.getQueue(game, queueName);
-
-        if (!queue) return;
-
-        queue.players = queue.players.filter(
-            p => p.id !== playerId
-        );
-    }
-
-    //
-    // Get all players in a queue
-    //
-    getPlayers(game, queueName) {
-
-        const queue = this.getQueue(game, queueName);
-
-        return queue ? queue.players : [];
-    }
-
-    //
-    // Set countdown
-    //
-    setCountdown(game, queueName, value) {
-
-        const queue = this.getQueue(game, queueName);
-
-        if (!queue) return;
-
-        queue.countdown = value;
-    }
-
-    //
-    // Set panel message (IMPORTANT FOR PERSISTENCE)
-    //
-    setPanelMessage(game, queueName, message) {
-
-        const queue = this.getQueue(game, queueName);
-
-        if (!queue) return;
+        const queue = this.getQueue(queueName);
 
         queue.panelMessage = message;
+        queue.panelMessageId = message.id;
+        queue.panelChannelId = message.channel.id;
+
     }
 
-    //
-    // Get panel message
-    //
-    getPanelMessage(game, queueName) {
+    isPlayerQueued(userId) {
 
-        const queue = this.getQueue(game, queueName);
+        return Object.values(this.queues).some(queue =>
+            queue.players.some(player => player.id === userId)
+        );
 
-        return queue ? queue.panelMessage : null;
     }
 
-    //
-    // Get full state (useful for debugging / persistence)
-    //
-    getAll() {
-        return this.queues;
+    join(queueName, member) {
+
+        const queue = this.getQueue(queueName);
+
+        if (!queue) {
+            throw new Error(`Queue "${queueName}" does not exist.`);
+        }
+
+        if (this.isPlayerQueued(member.id)) {
+
+            return {
+                success: false,
+                reason: "ALREADY_IN_QUEUE"
+            };
+
+        }
+
+        const maxPlayers = config.queue[queueName].maxPlayers;
+
+        if (queue.players.length >= maxPlayers) {
+
+            return {
+                success: false,
+                reason: "QUEUE_FULL"
+            };
+
+        }
+
+        const player = new Player(member);
+
+        player.setQueue(queueName);
+
+        queue.players.push(player);
+
+        return {
+            success: true
+        };
+
+    }
+
+    leave(queueName, userId) {
+
+        const queue = this.getQueue(queueName);
+
+        const index = queue.players.findIndex(
+            player => player.id === userId
+        );
+
+        if (index === -1) {
+            return false;
+        }
+
+        queue.players[index].leaveQueue();
+
+        queue.players.splice(index, 1);
+
+        if (queue.players.length < 2) {
+
+            queue.state = "WAITING";
+            queue.countdown = null;
+
+        }
+
+        return true;
+
+    }
+
+    clear(queueName) {
+
+        const queue = this.getQueue(queueName);
+
+        queue.players = [];
+
+        queue.state = "WAITING";
+        queue.countdown = null;
+
     }
 
 }

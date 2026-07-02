@@ -56,29 +56,6 @@ database.serialize(() => {
         )
     `);
 
-    //
-    // Matches
-    //
-    database.run(`
-        CREATE TABLE IF NOT EXISTS matches (
-            id TEXT PRIMARY KEY,
-            queueName TEXT NOT NULL,
-
-            bluePlayerId TEXT NOT NULL,
-            redPlayerId TEXT NOT NULL,
-
-            winnerPlayerId TEXT,
-            loserPlayerId TEXT,
-
-            status TEXT NOT NULL,
-
-            reportedBy TEXT,
-
-            createdAt INTEGER NOT NULL,
-            completedAt INTEGER
-        )
-    `);
-
 });
 
 module.exports = database;

@@ -1,59 +1,47 @@
 const queueManager = require("../queue/queueManager");
+const { updateRankedPanel } = require("../ui/updateRankedPanel");
+const { QUEUES } = require("./constants");
 
-/**
- * Refreshes a queue panel safely for BOTH legacy and multi-game systems
- */
-async function refreshRankedPanel(game, queueName) {
+async function refreshRankedPanel(queueName = QUEUES.RANKED) {
+
+    const queue = queueManager.getQueue(queueName);
+
+    if (!queue) {
+        console.error(`Queue "${queueName}" not found.`);
+        return false;
+    }
+
+    if (!queue.panelMessage) {
+        return false;
+    }
 
     try {
 
-        //
-        // Backward compatibility:
-        // If only queueName is passed, default to boxing_beta
-        //
-        if (!queueName) {
-            queueName = game;
-            game = "boxing_beta";
-        }
+        const updatedPanel = updateRankedPanel(queue);
 
-        const queue = queueManager.getQueue(game, queueName);
+        await queue.panelMessage.edit(updatedPanel);
 
-        if (!queue || !queue.panelMessage) {
-            return;
-        }
-
-        //
-        // Build updated panel (existing UI unchanged)
-        //
-        const players = queue.players || [];
-
-        const content =
-`🥊 **QUEUE STATUS**
-
-🎮 Game: ${game === "boxing_beta"
-    ? "Boxing Beta"
-    : "Untitled Boxing Game"}
-
-📦 Queue: ${queueName}
-
-👥 Players: ${players.length}
-
-${players.length > 0
-    ? players.map(p => `• ${p.displayName}`).join("\n")
-    : "No fighters in queue yet."}
-`;
-
-        await queue.panelMessage.edit({
-            content
-        });
+        return true;
 
     } catch (error) {
 
-        console.error("❌ Failed to refresh panel:");
+        console.error(
+            `Failed to refresh "${queueName}" queue panel:`
+        );
+
         console.error(error);
+
+        // If the panel was deleted, clear the cached reference.
+        queue.panelMessage = null;
+        queue.panelMessageId = null;
+        queue.panelChannelId = null;
+
+        return false;
 
     }
 
 }
 
-module.exports = { refreshRankedPanel };
+module.exports = {
+    refreshRankedPanel
+};

@@ -14,9 +14,5 @@ module.exports = {
             maxPlayers: 50,
             countdownSeconds: 5
         }
-    },
-
-    archive: {
-        resultsChannelId: "1522218916292595804"
     }
 };
