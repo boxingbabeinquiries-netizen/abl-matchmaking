@@ -2,9 +2,13 @@ const panelSelect = require("../components/panelSelect");
 const rankedButtons = require("../components/rankedButtons");
 
 const queueManager = require("../queue/queueManager");
-
-// 🧠 SHARED MATCH STORE (CRITICAL FIX)
 const { activeMatches } = require("../data/matchStore");
+
+// 🧠 CHANNEL ROUTING (UBG / BB → RESULT CHANNELS)
+const RESULT_CHANNELS = {
+    "1522239844376383498": "1521881655441362974", // UBG
+    "1522239909946068994": "1522218916292595804"  // BB
+};
 
 module.exports = async (interaction) => {
 
@@ -12,10 +16,8 @@ module.exports = async (interaction) => {
     if (interaction.isStringSelectMenu()) {
 
         switch (interaction.customId) {
-
             case "panel_select":
                 return panelSelect(interaction);
-
         }
     }
 
@@ -32,7 +34,6 @@ module.exports = async (interaction) => {
             case "join_ranked":
             case "leave_queue":
                 return rankedButtons(interaction);
-
         }
 
         // =========================
@@ -45,7 +46,7 @@ module.exports = async (interaction) => {
             const winnerColor = parts[2]; // blue or red
             const matchId = parts.slice(3).join("_");
 
-            // 🧠 GET MATCH FROM SHARED STORE
+            // 🧠 GET MATCH
             const match = activeMatches.get(matchId);
 
             if (!match) {
@@ -63,14 +64,14 @@ module.exports = async (interaction) => {
                 });
             }
 
+            // 🧠 STEP 3 — DECIDE WINNER
             match.resolved = true;
 
-            // 🧠 DETERMINE WINNER
             const winnerUser = winnerColor === "blue"
                 ? match.blueCorner
                 : match.redCorner;
 
-            // 🧠 CURRENT DATE
+            // 🧠 DATE
             const now = new Date();
             const formattedDate = now.toLocaleString("en-GB", {
                 year: "numeric",
@@ -80,9 +81,11 @@ module.exports = async (interaction) => {
                 minute: "2-digit"
             });
 
-            const resultChannel = interaction.guild.channels.cache.find(
-                c => c.name === "match-results"
-            );
+            // 🧠 STEP 4 — ROUTE RESULT CHANNEL (UBG / BB)
+            const sourceChannelId = interaction.channelId;
+            const resultChannelId = RESULT_CHANNELS[sourceChannelId];
+
+            const resultChannel = interaction.guild.channels.cache.get(resultChannelId);
 
             if (resultChannel) {
 
@@ -96,10 +99,9 @@ module.exports = async (interaction) => {
 
 Match ID: \`${matchId}\``
                 });
-
             }
 
-            // 🧠 UPDATE UI MESSAGE
+            // 🧠 UPDATE MATCH MESSAGE
             await interaction.update({
                 content: `🏁 Match concluded. Winner selected: **${winnerColor.toUpperCase()}**`,
                 components: []

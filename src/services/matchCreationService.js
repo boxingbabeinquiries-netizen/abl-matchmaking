@@ -2,7 +2,10 @@ const queueManager = require("../queue/queueManager");
 const MatchmakingEngine = require("../queue/matchmakingEngine");
 const { createMatchAnnouncement } = require("../ui/matchAnnouncement");
 const { refreshRankedPanel } = require("../utils/refreshRankedPanel");
-
+const RESULT_CHANNELS = {
+    "1522239844376383498": "1521881655441362974", // UBG
+    "1522239909946068994": "1522218916292595804"  // BB
+};
 const {
     ActionRowBuilder,
     ButtonBuilder,
