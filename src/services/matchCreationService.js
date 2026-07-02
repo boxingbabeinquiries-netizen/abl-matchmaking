@@ -9,12 +9,20 @@ class MatchCreationService {
 
     async create(channel, queueName) {
 
-        const queue = queueManager.getQueue(queueName);
-
-        // Make sure enough players are still queued
+        // Check if we can still create a match.
         if (!matchmakingEngine.canCreateMatch(queueName)) {
             return false;
         }
+
+        const preview = matchmakingEngine.previewMatch(queueName);
+
+        if (!preview) {
+            return false;
+        }
+
+        console.log(
+            `🥊 Creating match: ${preview.blueCorner.displayName} vs ${preview.redCorner.displayName}`
+        );
 
         const match = matchmakingEngine.createMatch(queueName);
 
@@ -22,22 +30,24 @@ class MatchCreationService {
             return false;
         }
 
-        // Stop any active countdown
+        // Reset countdown
+        const queue = queueManager.getQueue(queueName);
         queue.countdown = null;
 
-        // Announce the match
+        // Send announcement
         await channel.send(
             createMatchAnnouncement(match)
         );
 
-        // Update the queue panel
-        await refreshRankedPanel();
+        // Refresh queue panel
+        await refreshRankedPanel(queueName);
 
         console.log(
-            `[${queueName}] Match created: ${match.blueCorner.displayName} vs ${match.redCorner.displayName}`
+            `✅ Match ${match.id} successfully created.`
         );
 
-        return true;
+        return match;
+
     }
 
 }

@@ -16,25 +16,27 @@ class CountdownManager {
             return false;
         }
 
-        let seconds = config.queue[queueName].countdownSeconds;
+        let remaining = config.queue[queueName].countdownSeconds;
 
         const interval = setInterval(async () => {
 
-            seconds--;
+            remaining--;
 
-            await callback(seconds);
+            await callback(remaining);
 
-            if (seconds <= 0) {
-                clearInterval(interval);
-                this.timers.delete(queueName);
+            if (remaining <= 0) {
+                this.stop(queueName);
             }
 
         }, 1000);
 
-        this.timers.set(queueName, interval);
+        this.timers.set(queueName, {
+            interval,
+            startedAt: Date.now(),
+            duration: config.queue[queueName].countdownSeconds
+        });
 
         return true;
-
     }
 
     stop(queueName) {
@@ -45,11 +47,33 @@ class CountdownManager {
             return false;
         }
 
-        clearInterval(timer);
+        clearInterval(timer.interval);
+
         this.timers.delete(queueName);
 
         return true;
+    }
 
+    getRemaining(queueName) {
+
+        const timer = this.timers.get(queueName);
+
+        if (!timer) {
+            return null;
+        }
+
+        const elapsed = Math.floor(
+            (Date.now() - timer.startedAt) / 1000
+        );
+
+        return Math.max(
+            timer.duration - elapsed,
+            0
+        );
+    }
+
+    reset(queueName) {
+        this.stop(queueName);
     }
 
 }

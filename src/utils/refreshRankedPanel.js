@@ -1,9 +1,15 @@
 const queueManager = require("../queue/queueManager");
 const { updateRankedPanel } = require("../ui/updateRankedPanel");
+const { QUEUES } = require("./constants");
 
-async function refreshRankedPanel() {
+async function refreshRankedPanel(queueName = QUEUES.RANKED) {
 
-    const queue = queueManager.getQueue("ranked");
+    const queue = queueManager.getQueue(queueName);
+
+    if (!queue) {
+        console.error(`Queue "${queueName}" not found.`);
+        return;
+    }
 
     if (!queue.panelMessage) {
         return;
@@ -17,7 +23,10 @@ async function refreshRankedPanel() {
 
     } catch (error) {
 
-        console.error("Failed to refresh Ranked Queue panel:");
+        console.error(
+            `Failed to refresh "${queueName}" queue panel:`
+        );
+
         console.error(error);
 
     }

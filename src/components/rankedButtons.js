@@ -1,11 +1,15 @@
 const queueManager = require("../queue/queueManager");
-const config = require("../config/config");
 const matchmakingService = require("../services/matchmakingService");
-const { BUTTONS, QUEUES } = require("../utils/constants");
+
+const {
+    BUTTONS,
+    QUEUES,
+    QUEUE_RESULTS
+} = require("../utils/constants");
+
+const config = require("../config/config");
 
 module.exports = async (interaction) => {
-
-    const maxPlayers = config.queue.ranked.maxPlayers;
 
     switch (interaction.customId) {
 
@@ -20,15 +24,15 @@ module.exports = async (interaction) => {
 
                 switch (result.reason) {
 
-                    case "ALREADY_IN_QUEUE":
+                    case QUEUE_RESULTS.ALREADY_IN_QUEUE:
                         return interaction.reply({
                             content: "❌ You are already in a matchmaking queue.",
                             ephemeral: true
                         });
 
-                    case "QUEUE_FULL":
+                    case QUEUE_RESULTS.QUEUE_FULL:
                         return interaction.reply({
-                            content: `❌ The Ranked Queue is full (${maxPlayers}/${maxPlayers}).`,
+                            content: `❌ The Ranked Queue is full (${config.queue.ranked.maxPlayers}/${config.queue.ranked.maxPlayers}).`,
                             ephemeral: true
                         });
 
@@ -47,12 +51,8 @@ module.exports = async (interaction) => {
                 interaction.channel
             );
 
-            const players = queueManager.getPlayers(QUEUES.RANKED);
-
             return interaction.reply({
-                content:
-                    `🥊 The Commissioner has accepted you into the Ranked Queue!\n\n` +
-                    `👥 Fighters waiting: **${players.length}/${maxPlayers}**`,
+                content: "🥊 **The Commissioner** has accepted you into the Ranked Queue.",
                 ephemeral: true
             });
 
@@ -60,26 +60,26 @@ module.exports = async (interaction) => {
 
         case BUTTONS.LEAVE_QUEUE: {
 
-            const left = queueManager.leave(
+            const success = queueManager.leave(
                 QUEUES.RANKED,
                 interaction.member.id
             );
 
-            if (!left) {
+            if (!success) {
+
                 return interaction.reply({
                     content: "❌ You are not currently in the Ranked Queue.",
                     ephemeral: true
                 });
+
             }
 
-            await matchmakingService.playerLeft(QUEUES.RANKED);
-
-            const players = queueManager.getPlayers(QUEUES.RANKED);
+            await matchmakingService.playerLeft(
+                QUEUES.RANKED
+            );
 
             return interaction.reply({
-                content:
-                    `🚪 The Commissioner has removed you from the Ranked Queue.\n\n` +
-                    `👥 Fighters waiting: **${players.length}/${maxPlayers}**`,
+                content: "🚪 **The Commissioner** has removed you from the Ranked Queue.",
                 ephemeral: true
             });
 

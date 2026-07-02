@@ -1,56 +1,66 @@
 const config = require("../config/config");
 const { createRankedPanel } = require("./rankedPanel");
 
+function formatCountdown(seconds) {
+
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+
+    return `${minutes.toString().padStart(2, "0")}:${remainingSeconds
+        .toString()
+        .padStart(2, "0")}`;
+
+}
+
 function updateRankedPanel(queue) {
 
     const panel = createRankedPanel();
-
     const embed = panel.embeds[0];
 
     const maxPlayers = config.queue.ranked.maxPlayers;
 
-    const fighters =
+    const fighterList =
         queue.players.length === 0
-            ? "No fighters waiting."
+            ? "*No fighters waiting.*"
             : queue.players
                 .map(player => `🥊 ${player.displayName}`)
                 .join("\n");
 
-    embed.spliceFields(
-        1,
-        1,
-        {
-            name: `👥 Fighters Waiting (${queue.players.length}/${maxPlayers})`,
-            value: fighters,
-            inline: false
-        }
-    );
-
-    let matchmakingText = "Waiting for another fighter...";
+    let status = "🟢 Open";
+    let matchmaking = "Waiting for another fighter...";
 
     if (queue.countdown !== null) {
 
-        const minutes = Math.floor(queue.countdown / 60);
-        const seconds = queue.countdown % 60;
+        status = "🟡 Matchmaking";
 
-        matchmakingText =
-            `🔔 Match begins in\n\n` +
-            `**${minutes.toString().padStart(2, "0")}:${seconds
-                .toString()
-                .padStart(2, "0")}**`;
+        matchmaking =
+            `🔔 Match begins in\n\n**${formatCountdown(queue.countdown)}**`;
 
     } else if (queue.players.length >= 2) {
 
-        matchmakingText = "Preparing matchmaking...";
+        status = "🟠 Ready";
+
+        matchmaking =
+            "Two fighters are ready.\nWaiting for matchmaking to begin.";
 
     }
 
     embed.spliceFields(
-        2,
-        1,
+        0,
+        3,
+        {
+            name: "📊 Status",
+            value: status,
+            inline: false
+        },
+        {
+            name: `👥 Fighters Waiting (${queue.players.length}/${maxPlayers})`,
+            value: fighterList,
+            inline: false
+        },
         {
             name: "⏳ Matchmaking",
-            value: matchmakingText,
+            value: matchmaking,
             inline: false
         }
     );

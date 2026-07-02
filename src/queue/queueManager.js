@@ -1,6 +1,8 @@
 const config = require("../config/config");
+const Player = require("../models/Player");
 
 class QueueManager {
+
     constructor() {
         this.queues = {
             ranked: this.createQueue(),
@@ -64,10 +66,9 @@ class QueueManager {
             };
         }
 
-        queue.players.push({
-            id: member.id,
-            displayName: member.displayName
-        });
+        queue.players.push(
+            new Player(member)
+        );
 
         return {
             success: true
@@ -77,6 +78,10 @@ class QueueManager {
     leave(queueName, userId) {
 
         const queue = this.getQueue(queueName);
+
+        if (!queue) {
+            throw new Error(`Queue "${queueName}" does not exist.`);
+        }
 
         const index = queue.players.findIndex(
             player => player.id === userId
@@ -95,9 +100,14 @@ class QueueManager {
 
         const queue = this.getQueue(queueName);
 
+        if (!queue) {
+            throw new Error(`Queue "${queueName}" does not exist.`);
+        }
+
         queue.players = [];
         queue.countdown = null;
     }
+
 }
 
 module.exports = new QueueManager();
