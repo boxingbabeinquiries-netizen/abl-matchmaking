@@ -3,6 +3,15 @@ const MatchmakingEngine = require("../queue/matchmakingEngine");
 const { createMatchAnnouncement } = require("../ui/matchAnnouncement");
 const { refreshRankedPanel } = require("../utils/refreshRankedPanel");
 
+const {
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle
+} = require("discord.js");
+
+// 🧠 SHARED MATCH STORE (FIX FOR STEP 3 ISSUE)
+const { activeMatches } = require("../data/matchStore");
+
 console.log("🔥 NEW matchCreationService LOADED");
 
 const matchmakingEngine = new MatchmakingEngine(queueManager);
@@ -29,16 +38,26 @@ class MatchCreationService {
             `[${queueName}] Match selected: ${match.blueCorner.displayName} vs ${match.redCorner.displayName}`
         );
 
-        console.log("Blue Player:");
-        console.dir(match.blueCorner, { depth: null });
-
-        console.log("Red Player:");
-        console.dir(match.redCorner, { depth: null });
-
         const queue = queueManager.getQueue(queueName);
         queue.countdown = null;
 
         const announcement = createMatchAnnouncement(match);
+
+        // 🧠 STEP 2 — STORE MATCH FOR BUTTON HANDLER
+        activeMatches.set(match.id, match);
+
+        // 🥊 WINNER BUTTONS
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId(`match_win_blue_${match.id}`)
+                .setLabel(`Blue Corner`)
+                .setStyle(ButtonStyle.Primary),
+
+            new ButtonBuilder()
+                .setCustomId(`match_win_red_${match.id}`)
+                .setLabel(`Red Corner`)
+                .setStyle(ButtonStyle.Danger)
+        );
 
         const payload = {
             content:
@@ -47,8 +66,14 @@ class MatchCreationService {
 🥊 The Commissioner has sanctioned a ranked bout!
 
 🔵 <@${match.blueCorner.id}>
-🔴 <@${match.redCorner.id}>`,
+🔴 <@${match.redCorner.id}>
+
+👉 Select the winner below:`,
+
             embeds: announcement.embeds,
+
+            components: [row],
+
             allowedMentions: {
                 parse: ["users"]
             }

@@ -1,28 +1,20 @@
+const crypto = require("crypto");
+
 class MatchmakingEngine {
 
     constructor(queueManager) {
         this.queueManager = queueManager;
     }
 
-    /**
-     * Returns true if a queue has enough players
-     * to create a match.
-     */
     canCreateMatch(queueName) {
 
         const queue = this.queueManager.getQueue(queueName);
 
-        if (!queue) {
-            return false;
-        }
+        if (!queue) return false;
 
         return queue.players.length >= 2;
     }
 
-    /**
-     * Returns the next two fighters
-     * without removing them.
-     */
     previewMatch(queueName) {
 
         const queue = this.queueManager.getQueue(queueName);
@@ -37,9 +29,6 @@ class MatchmakingEngine {
         };
     }
 
-    /**
-     * Creates the next match using FIFO.
-     */
     createMatch(queueName) {
 
         const queue = this.queueManager.getQueue(queueName);
@@ -51,36 +40,34 @@ class MatchmakingEngine {
         const blueCorner = queue.players.shift();
         const redCorner = queue.players.shift();
 
-        return {
+        // 🧠 CREATE MATCH OBJECT (UNCHANGED CORE)
+        const match = {
             id: crypto.randomUUID(),
-
             queue: queueName,
-
             createdAt: new Date(),
-
             blueCorner,
-
             redCorner
         };
 
+        // 🥊 SPRINT 19 STEP 1 ADDITION (UI READY PAYLOAD)
+        match.ui = {
+            buttons: {
+                blue: `match_win_blue_${match.id}`,
+                red: `match_win_red_${match.id}`
+            }
+        };
+
+        return match;
     }
 
-    /**
-     * Returns the current queue size.
-     */
     getQueueSize(queueName) {
 
         const queue = this.queueManager.getQueue(queueName);
 
-        if (!queue) {
-            return 0;
-        }
+        if (!queue) return 0;
 
         return queue.players.length;
     }
-
 }
-
-const crypto = require("crypto");
 
 module.exports = MatchmakingEngine;
