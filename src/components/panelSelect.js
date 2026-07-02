@@ -1,5 +1,6 @@
 const { createRankedPanel } = require("../ui/rankedPanel");
 const queueManager = require("../queue/queueManager");
+const queuePanelRepository = require("../database/queuePanelRepository");
 
 module.exports = async (interaction) => {
 
@@ -14,6 +15,19 @@ module.exports = async (interaction) => {
             );
 
             queueManager.setPanelMessage("ranked", message);
+
+            //
+            // Persist this panel so it can be restored after a restart.
+            //
+            await queuePanelRepository.save(
+                "ranked",
+                interaction.channel.id,
+                message.id
+            );
+
+            console.log(
+                `💾 Saved Ranked Queue panel (${message.id})`
+            );
 
             await interaction.update({
                 content: "✅ Ranked Queue panel created successfully!",

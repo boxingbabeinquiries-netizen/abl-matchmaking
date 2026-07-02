@@ -2,7 +2,7 @@ const { Events } = require("discord.js");
 const config = require("../config/config");
 
 const persistenceService = require("../services/persistenceService");
-const matchmakingService = require("../services/matchmakingService");
+const panelRecoveryService = require("../services/panelRecoveryService");
 const queueManager = require("../queue/queueManager");
 
 const {
@@ -25,7 +25,7 @@ module.exports = {
         console.log("----------------------------------------");
 
         //
-        // Restore persisted queues.
+        // Restore persisted queue members.
         //
         try {
 
@@ -41,8 +41,23 @@ module.exports = {
         }
 
         //
-        // Automatically restart matchmaking
-        // if enough players remain queued.
+        // Restore persisted queue panels.
+        //
+        try {
+
+            await panelRecoveryService.restore(client);
+
+            console.log("🖼️ Queue panel restoration complete.");
+
+        } catch (error) {
+
+            console.error("❌ Failed to restore queue panels.");
+            console.error(error);
+
+        }
+
+        //
+        // Check whether matchmaking can immediately resume.
         //
         try {
 
@@ -56,10 +71,9 @@ module.exports = {
                     "🥊 Ranked queue restored with enough fighters."
                 );
 
-                // We don't have a Discord channel after a restart,
-                // so matchmaking will resume once the next interaction
-                // occurs. Later we'll improve this by restoring the
-                // original queue channel.
+                console.log(
+                    "⏳ A fresh matchmaking countdown will begin on the next queue interaction."
+                );
 
             }
 
