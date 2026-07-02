@@ -3,24 +3,13 @@ const MatchmakingEngine = require("../queue/matchmakingEngine");
 const { createMatchAnnouncement } = require("../ui/matchAnnouncement");
 const { refreshRankedPanel } = require("../utils/refreshRankedPanel");
 
-const RESULT_CHANNELS = {
-    "1522239844376383498": "1521881655441362974", // UBG results
-    "1522239909946068994": "1522218916292595804"  // BB results
-};
-
-// 🆕 MATCHMAKING CHANNEL ROUTING (STEP 2 FIX)
-const MATCH_CHANNELS = {
-    "1522239844376383498": "1522280785887887441", // UBG matchmaking
-    "1522239909946068994": "1522280916549107833"  // BB matchmaking
-};
-
 const {
     ActionRowBuilder,
     ButtonBuilder,
     ButtonStyle
 } = require("discord.js");
 
-// 🧠 SHARED MATCH STORE
+// 🧠 SHARED MATCH STORE (FIX FOR STEP 3 ISSUE)
 const { activeMatches } = require("../data/matchStore");
 
 console.log("🔥 NEW matchCreationService LOADED");
@@ -54,10 +43,10 @@ class MatchCreationService {
 
         const announcement = createMatchAnnouncement(match);
 
-        // 🧠 STORE MATCH FOR BUTTON HANDLER
+        // 🧠 STEP 2 — STORE MATCH FOR BUTTON HANDLER
         activeMatches.set(match.id, match);
 
-        // 🥊 BUTTONS
+        // 🥊 WINNER BUTTONS
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
                 .setCustomId(`match_win_blue_${match.id}`)
@@ -82,6 +71,7 @@ class MatchCreationService {
 👉 Select the winner below:`,
 
             embeds: announcement.embeds,
+
             components: [row],
 
             allowedMentions: {
@@ -89,27 +79,22 @@ class MatchCreationService {
             }
         };
 
+        console.log("Sending payload:");
+        console.dir(payload, { depth: null });
+
         try {
 
-            // 🥊 STEP 2 FIX — ROUTE TO MATCHMAKING CHANNEL
-            const matchChannelId = MATCH_CHANNELS[channel.id];
-
-            const matchChannel = channel.guild.channels.cache.get(matchChannelId);
-
-            if (!matchChannel) {
-                console.error("❌ Matchmaking channel not found.");
-                return;
-            }
-
-            await matchChannel.send(payload);
+            await channel.send(payload);
 
             console.log(
-                `🥊 Match created in matchmaking channel: ${match.blueCorner.displayName} vs ${match.redCorner.displayName}`
+                `🥊 Match created: ${match.blueCorner.displayName} vs ${match.redCorner.displayName}`
             );
 
         } catch (error) {
+
             console.error("Failed to announce match:");
             console.error(error);
+
         }
 
         await refreshRankedPanel(queueName);
@@ -117,7 +102,9 @@ class MatchCreationService {
         console.log(`[${queueName}] Match creation complete.`);
 
         return match;
+
     }
+
 }
 
 module.exports = new MatchCreationService();
