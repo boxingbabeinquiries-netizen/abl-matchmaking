@@ -7,12 +7,12 @@ module.exports = {
     queue: {
         ranked: {
             maxPlayers: 50,
-            countdownSeconds: 120
+            countdownSeconds: 60
         },
 
         rp: {
             maxPlayers: 50,
-            countdownSeconds: 120
+            countdownSeconds: 60
         }
     }
 };
