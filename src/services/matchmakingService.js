@@ -10,33 +10,55 @@ class MatchmakingService {
 
     async playerJoined(queueName, channel) {
 
-        // Always refresh the panel first
         await refreshRankedPanel();
 
-        // Not enough players yet
         if (!matchmakingEngine.canCreateMatch(queueName)) {
             return;
         }
 
-        // Countdown already running
         if (countdownManager.isRunning(queueName)) {
             return;
         }
 
-        // TEMPORARY:
-        // Instantly create a match until we build the countdown.
-        await matchCreationService.create(channel, queueName);
+        const queue = queueManager.getQueue(queueName);
+
+        queue.countdown = 120;
+
+        countdownManager.start(queueName, async (seconds) => {
+
+            queue.countdown = seconds;
+
+            await refreshRankedPanel();
+
+            // Countdown cancelled because someone left
+            if (queue.players.length < 2) {
+                countdownManager.stop(queueName);
+                queue.countdown = null;
+
+                await refreshRankedPanel();
+                return;
+            }
+
+            if (seconds === 0) {
+                await matchCreationService.create(channel, queueName);
+                queue.countdown = null;
+            }
+
+        });
+
     }
 
     async playerLeft(queueName) {
 
-        const players = queueManager.getPlayers(queueName);
+        const queue = queueManager.getQueue(queueName);
 
-        if (players.length < 2) {
+        if (queue.players.length < 2) {
             countdownManager.stop(queueName);
+            queue.countdown = null;
         }
 
         await refreshRankedPanel();
+
     }
 
 }

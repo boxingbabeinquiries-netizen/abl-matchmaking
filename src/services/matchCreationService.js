@@ -1,43 +1,45 @@
 const queueManager = require("../queue/queueManager");
-const countdownManager = require("../queue/countdownManager");
 const MatchmakingEngine = require("../queue/matchmakingEngine");
-const matchCreationService = require("./matchCreationService");
+const { createMatchAnnouncement } = require("../ui/matchAnnouncement");
 const { refreshRankedPanel } = require("../utils/refreshRankedPanel");
 
 const matchmakingEngine = new MatchmakingEngine(queueManager);
 
-class MatchmakingService {
+class MatchCreationService {
 
-    async playerJoined(queueName, channel) {
+    async create(channel, queueName) {
 
-        await refreshRankedPanel();
+        const queue = queueManager.getQueue(queueName);
 
+        // Make sure enough players are still queued
         if (!matchmakingEngine.canCreateMatch(queueName)) {
-            return;
+            return false;
         }
 
-        if (countdownManager.isRunning(queueName)) {
-            return;
+        const match = matchmakingEngine.createMatch(queueName);
+
+        if (!match) {
+            return false;
         }
 
-        // Temporary: instantly create a match.
-        // We'll replace this with a real countdown next sprint.
-        await matchCreationService.create(channel, queueName);
+        // Stop any active countdown
+        queue.countdown = null;
 
-    }
+        // Announce the match
+        await channel.send(
+            createMatchAnnouncement(match)
+        );
 
-    async playerLeft(queueName) {
-
-        const players = queueManager.getPlayers(queueName);
-
-        if (players.length < 2) {
-            countdownManager.stop(queueName);
-        }
-
+        // Update the queue panel
         await refreshRankedPanel();
 
+        console.log(
+            `[${queueName}] Match created: ${match.blueCorner.displayName} vs ${match.redCorner.displayName}`
+        );
+
+        return true;
     }
 
 }
 
-module.exports = new MatchmakingService();
+module.exports = new MatchCreationService();

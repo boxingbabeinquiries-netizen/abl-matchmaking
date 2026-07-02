@@ -1,3 +1,5 @@
+const config = require("../config/config");
+
 class CountdownManager {
 
     constructor() {
@@ -8,15 +10,31 @@ class CountdownManager {
         return this.timers.has(queueName);
     }
 
-    start(queueName, interval) {
+    start(queueName, callback) {
 
         if (this.isRunning(queueName)) {
             return false;
         }
 
+        let seconds = config.queue[queueName].countdownSeconds;
+
+        const interval = setInterval(async () => {
+
+            seconds--;
+
+            await callback(seconds);
+
+            if (seconds <= 0) {
+                clearInterval(interval);
+                this.timers.delete(queueName);
+            }
+
+        }, 1000);
+
         this.timers.set(queueName, interval);
 
         return true;
+
     }
 
     stop(queueName) {
@@ -28,14 +46,10 @@ class CountdownManager {
         }
 
         clearInterval(timer);
-
         this.timers.delete(queueName);
 
         return true;
-    }
 
-    get(queueName) {
-        return this.timers.get(queueName);
     }
 
 }
