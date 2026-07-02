@@ -1,52 +1,66 @@
-const { createRankedPanel } = require("../ui/rankedPanel");
-const queueManager = require("../queue/queueManager");
-const queuePanelRepository = require("../database/queuePanelRepository");
+const {
+    ActionRowBuilder,
+    StringSelectMenuBuilder
+} = require("discord.js");
 
 module.exports = async (interaction) => {
 
     const selection = interaction.values[0];
 
-    switch (selection) {
+    //
+    // STEP 1 — GAME SELECTION
+    //
+    if (selection === "game_select") {
 
-        case "ranked": {
+        const gameMenu = new ActionRowBuilder().addComponents(
+            new StringSelectMenuBuilder()
+                .setCustomId("game_select")
+                .setPlaceholder("Select a game")
+                .addOptions(
+                    {
+                        label: "🥊 Boxing Beta",
+                        value: "boxing_beta"
+                    },
+                    {
+                        label: "🥊 Untitled Boxing Game",
+                        value: "ubg"
+                    }
+                )
+        );
 
-            const message = await interaction.channel.send(
-                createRankedPanel()
-            );
+        return interaction.update({
+            content: "🎮 Select the game you want to create a queue panel for:",
+            components: [gameMenu]
+        });
+    }
 
-            queueManager.setPanelMessage("ranked", message);
+    //
+    // STEP 2 — GAME HAS BEEN SELECTED
+    //
+    if (selection === "boxing_beta" || selection === "ubg") {
 
-            //
-            // Persist this panel so it can be restored after a restart.
-            //
-            await queuePanelRepository.save(
-                "ranked",
-                interaction.channel.id,
-                message.id
-            );
+        const queueMenu = new ActionRowBuilder().addComponents(
+            new StringSelectMenuBuilder()
+                .setCustomId(`queue_select:${selection}`)
+                .setPlaceholder("Select queue type")
+                .addOptions(
+                    {
+                        label: "🥊 Ranked Queue",
+                        value: "ranked"
+                    },
+                    {
+                        label: "🎭 RP Queue",
+                        value: "rp"
+                    }
+                )
+        );
 
-            console.log(
-                `💾 Saved Ranked Queue panel (${message.id})`
-            );
+        return interaction.update({
+            content: `🎯 Game selected: **${selection === "boxing_beta" ? "Boxing Beta" : "Untitled Boxing Game"}**
 
-            await interaction.update({
-                content: "✅ Ranked Queue panel created successfully!",
-                components: []
-            });
-
-            break;
-        }
-
-        case "rp": {
-
-            await interaction.update({
-                content: "🎭 RP Queue coming soon!",
-                components: []
-            });
-
-            break;
-        }
-
+Now select a queue type:`,
+            components: [queueMenu]
+        });
     }
 
 };

@@ -5,9 +5,7 @@ const persistenceService = require("../services/persistenceService");
 const panelRecoveryService = require("../services/panelRecoveryService");
 const queueManager = require("../queue/queueManager");
 
-const {
-    QUEUES
-} = require("../utils/constants");
+const { QUEUES } = require("../utils/constants");
 
 module.exports = {
     name: Events.ClientReady,
@@ -25,7 +23,7 @@ module.exports = {
         console.log("----------------------------------------");
 
         //
-        // Restore persisted queue members.
+        // Restore persisted queue members
         //
         try {
 
@@ -41,7 +39,7 @@ module.exports = {
         }
 
         //
-        // Restore persisted queue panels.
+        // Restore persisted queue panels
         //
         try {
 
@@ -57,28 +55,33 @@ module.exports = {
         }
 
         //
-        // Check whether matchmaking can immediately resume.
+        // Check matchmaking readiness per game
         //
         try {
 
-            const rankedQueue = queueManager.getQueue(
-                QUEUES.RANKED
-            );
+            const games = ["boxing_beta", "ubg"];
 
-            if (rankedQueue.players.length >= 2) {
+            for (const game of games) {
 
-                console.log(
-                    "🥊 Ranked queue restored with enough fighters."
-                );
+                const rankedQueue = queueManager.getQueue(game, QUEUES.RANKED);
 
-                console.log(
-                    "⏳ A fresh matchmaking countdown will begin on the next queue interaction."
-                );
+                if (rankedQueue && rankedQueue.players.length >= 2) {
+
+                    console.log(
+                        `🥊 ${game} ranked queue restored with enough fighters.`
+                    );
+
+                    console.log(
+                        "⏳ A fresh matchmaking countdown will begin on the next queue interaction."
+                    );
+
+                }
 
             }
 
         } catch (error) {
 
+            console.error("❌ Error during matchmaking readiness check:");
             console.error(error);
 
         }

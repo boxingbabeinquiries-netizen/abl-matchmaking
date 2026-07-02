@@ -1,80 +1,95 @@
+const {
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle
+} = require("discord.js");
+
 const queueManager = require("../queue/queueManager");
 const MatchmakingEngine = require("../queue/matchmakingEngine");
+
+const matchRepository = require("../database/matchRepository");
+
 const { createMatchAnnouncement } = require("../ui/matchAnnouncement");
 const { refreshRankedPanel } = require("../utils/refreshRankedPanel");
-
-console.log("🔥 NEW matchCreationService LOADED");
 
 const matchmakingEngine = new MatchmakingEngine(queueManager);
 
 class MatchCreationService {
 
-    async create(channel, queueName) {
+    async create(channel, game, queueName) {
 
-        console.log(`[${queueName}] Starting match creation...`);
-
-        if (!matchmakingEngine.canCreateMatch(queueName)) {
-            console.log(`[${queueName}] Not enough players to create a match.`);
+        if (!matchmakingEngine.canCreateMatch(game, queueName)) {
             return null;
         }
 
-        const match = matchmakingEngine.createMatch(queueName);
+        const match = matchmakingEngine.createMatch(game, queueName);
 
         if (!match) {
-            console.log(`[${queueName}] Matchmaking engine returned null.`);
             return null;
         }
 
-        console.log(
-            `[${queueName}] Match selected: ${match.blueCorner.displayName} vs ${match.redCorner.displayName}`
-        );
-
-        console.log("Blue Player:");
-        console.dir(match.blueCorner, { depth: null });
-
-        console.log("Red Player:");
-        console.dir(match.redCorner, { depth: null });
-
-        const queue = queueManager.getQueue(queueName);
+        const queue = queueManager.getQueue(game, queueName);
         queue.countdown = null;
+
+        //
+        // Persist match WITH game context
+        //
+        const storedMatch = await matchRepository.create(
+            game,
+            queueName,
+            match.blueCorner.id,
+            match.redCorner.id
+        );
 
         const announcement = createMatchAnnouncement(match);
 
-        const payload = {
+        const buttons = new ActionRowBuilder().addComponents(
+
+            new ButtonBuilder()
+                .setCustomId(`match:${storedMatch.id}:blue`)
+                .setLabel("🟦 Blue Corner Won")
+                .setStyle(ButtonStyle.Primary),
+
+            new ButtonBuilder()
+                .setCustomId(`match:${storedMatch.id}:red`)
+                .setLabel("🟥 Red Corner Won")
+                .setStyle(ButtonStyle.Danger)
+
+        );
+
+        await channel.send({
+
             content:
 `🚨 **MATCH FOUND!** 🚨
 
-🥊 The Commissioner has sanctioned a ranked bout!
+🥊 **The Commissioner has sanctioned a ${game === "boxing_beta"
+    ? "Boxing Beta"
+    : "Untitled Boxing Game"} bout!**
 
 🔵 <@${match.blueCorner.id}>
-🔴 <@${match.redCorner.id}>`,
+🆚
+🔴 <@${match.redCorner.id}>
+
+Report the result after the fight using the buttons below.`,
+
             embeds: announcement.embeds,
+
+            components: [buttons],
+
             allowedMentions: {
-                parse: ["users"]
+                users: [
+                    match.blueCorner.id,
+                    match.redCorner.id
+                ]
             }
-        };
 
-        console.log("Sending payload:");
-        console.dir(payload, { depth: null });
+        });
 
-        try {
+        console.log(
+            `🥊 Match ${storedMatch.id} created in ${game}/${queueName}`
+        );
 
-            await channel.send(payload);
-
-            console.log(
-                `🥊 Match created: ${match.blueCorner.displayName} vs ${match.redCorner.displayName}`
-            );
-
-        } catch (error) {
-
-            console.error("Failed to announce match:");
-            console.error(error);
-
-        }
-
-        await refreshRankedPanel(queueName);
-
-        console.log(`[${queueName}] Match creation complete.`);
+        await refreshRankedPanel(game, queueName);
 
         return match;
 
