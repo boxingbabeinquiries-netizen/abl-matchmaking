@@ -1,7 +1,7 @@
 const config = require("../config/config");
 const queueManager = require("../queue/queueManager");
 const countdownManager = require("../queue/countdownManager");
-const MatchmakingEngine = require("../queue/MatchmakingEngine");
+const MatchmakingEngine = require("../queue/matchmakingEngine");
 const matchCreationService = require("./matchCreationService");
 const { refreshRankedPanel } = require("../utils/refreshRankedPanel");
 
@@ -13,15 +13,14 @@ class MatchmakingService {
 
         const queue = queueManager.getQueue(queueName);
 
-        // Always refresh first.
         await refreshRankedPanel(queueName);
 
-        // Need at least two players.
+        // Not enough players to begin matchmaking.
         if (!matchmakingEngine.canCreateMatch(queueName)) {
             return;
         }
 
-        // Prevent duplicate countdowns.
+        // Prevent multiple countdowns.
         if (countdownManager.isRunning(queueName)) {
             return;
         }
@@ -30,7 +29,7 @@ class MatchmakingService {
 
         countdownManager.start(queueName, async (remaining) => {
 
-            // Someone left during the countdown.
+            // Countdown cancelled because someone left.
             if (queue.players.length < 2) {
 
                 countdownManager.stop(queueName);
@@ -46,14 +45,19 @@ class MatchmakingService {
 
             await refreshRankedPanel(queueName);
 
+            // Countdown finished.
             if (remaining <= 0) {
 
                 queue.countdown = null;
 
-                await matchCreationService.create(
+                const created = await matchCreationService.create(
                     channel,
                     queueName
                 );
+
+                if (created) {
+                    await refreshRankedPanel(queueName);
+                }
 
             }
 

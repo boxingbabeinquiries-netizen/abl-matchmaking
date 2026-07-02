@@ -9,7 +9,7 @@ class MatchCreationService {
 
     async create(channel, queueName) {
 
-        // Check if we can still create a match.
+        // Verify there are still enough players.
         if (!matchmakingEngine.canCreateMatch(queueName)) {
             return false;
         }
@@ -30,24 +30,29 @@ class MatchCreationService {
             return false;
         }
 
-        // Reset countdown
         const queue = queueManager.getQueue(queueName);
+
+        // Fully reset queue state.
         queue.countdown = null;
 
-        // Send announcement
+        // If no fighters remain, reset to an idle state.
+        if (queue.players.length === 0) {
+            queue.countdown = null;
+        }
+
+        // Send announcement.
         await channel.send(
             createMatchAnnouncement(match)
         );
 
-        // Refresh queue panel
+        // Refresh the queue panel.
         await refreshRankedPanel(queueName);
 
         console.log(
-            `✅ Match ${match.id} successfully created.`
+            `✅ Match ${match.id} completed successfully.`
         );
 
         return match;
-
     }
 
 }
